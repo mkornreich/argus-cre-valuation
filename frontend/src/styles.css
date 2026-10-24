@@ -623,6 +623,57 @@ select.cell {
   background: var(--accent-soft);
 }
 
+/* ---- traditional valuation ---- */
+.trad-yields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.trad-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafbfd;
+}
+.trad-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.trad-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+.trad-value.accent {
+  color: var(--accent);
+}
+.trad-hint {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.trad-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* ---- portfolio ---- */
+.portfolio-layout {
+  display: block;
+}
+.portfolio {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 /* ---- misc ---- */
 .banner {
   padding: 10px 18px;

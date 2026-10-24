@@ -19,14 +19,16 @@ unlevered/levered IRR, equity multiples and cash-on-cash.
 Modeled after the real ARGUS Enterprise workflow (studied from Altus's feature
 documentation and market-leasing references):
 
-- **Monthly engine.** Like ARGUS, the model computes every line on a **monthly**
-  axis with exact proration — a lease that commences or expires mid-month,
-  fractional downtime from probability weighting, free-rent burn-off and the
-  month a TI/LC check is cut are all precise, not rounded to whole years. The UI
-  shows either the annual roll-up or the full monthly cash flow.
+- **Daily engine.** Like ARGUS, every line is accrued on a **daily** grid
+  (365.25-day year) and rolled up to months and financial years — mid-period
+  commencements, fractional downtime from probability weighting, free-rent
+  burn-off and the day a TI/LC check is cut are exact. The UI shows the annual
+  roll-up or the full monthly cash flow.
 - **Rent roll** — in-place leases with suite SF, start year/month, term, base
-  rent $/SF, annual escalations, free rent, a per-lease reimbursement method,
-  optional upfront TI/LC and optional **percentage rent** (retail).
+  rent $/SF, a per-lease reimbursement method, optional upfront TI/LC and
+  optional **percentage rent** (retail).
+- **Rent reviews** — fixed escalations, **CPI indexation**, or an explicit
+  **stepped** rent schedule, chosen per lease.
 - **Market Leasing Assumptions (MLAs)** — the defining ARGUS feature. When a
   lease rolls (or space starts vacant), it re-leases on a **renewal-probability-
   weighted blend** of "renew" and "new tenant" outcomes, each with its own
@@ -35,20 +37,24 @@ documentation and market-leasing references):
 - **Absorption & turnover vacancy** — downtime on rollover is an explicit line,
   and general vacancy is netted against it (ARGUS convention) to avoid double
   counting.
-- **Reimbursement methods** — each lease recovers operating expenses as **Net**
-  (pro-rata share), **Base-Year Stop** (share of the increase over the lease's
-  own first twelve months) or **Gross** (none), with optional **occupancy
-  gross-up** of variable recoverable expenses and recoverable / non-recoverable
-  and fixed / variable expense flags.
-- **Operating expenses** — line-item schedule, each on a $/SF or total basis with
-  its own growth rate.
-- **Leasing & capital costs below NOI** — TI, LC and $/SF capital reserves reduce
-  the unlevered cash flow, exactly as in an ARGUS cash flow.
-- **Valuation** — going-in cap rate, terminal value from forward (year *N+1*) NOI
-  at an exit cap, selling costs, PV of cash flows at the discount rate, NPV vs.
-  purchase price, and unlevered IRR / equity multiple.
-- **Financing** — sizing by LTV, monthly-amortizing or interest-only debt, DSCR,
-  levered IRR, equity multiple and average cash-on-cash.
+- **Reimbursement structures** — each lease recovers operating expenses as
+  **Net** (pro-rata share), **Base-Year Stop** (increase over the lease's own
+  first twelve months) or **Gross** (none), with optional **occupancy
+  gross-up**, an **annual cap** on recoverable-expense growth, an **expense stop
+  ($/SF)**, an **admin fee**, and recoverable / non-recoverable and fixed /
+  variable expense pools.
+- **Leasing & capital costs below NOI** — TI, LC (as a **% of rent or $/SF**)
+  and $/SF capital reserves, exactly as in an ARGUS cash flow.
+- **DCF valuation** — going-in cap, terminal value from forward NOI at an exit
+  cap, selling costs, NPV vs. price, unlevered IRR / equity multiple.
+- **Traditional valuation** — **Net Initial Yield**, **Reversionary Yield**, and
+  a **Term & Reversion** capitalisation (passing income capitalised to the WALT,
+  plus the deferred reversion to market rent).
+- **Financing** — a full **capital stack**: multiple **tranches** (senior /
+  mezzanine), each interest-only or amortizing, with **participating** loans
+  (a lender share of net reversion); DSCR, levered IRR, equity multiple, CoC.
+- **Portfolio / fund consolidation** — roll several deals into blended value,
+  cap rate, equity/debt and a portfolio-level IRR, with a consolidated cash flow.
 - **Sensitivity analysis** — a discount-rate × exit-cap grid of DCF value and
   unlevered IRR (ARGUS "what-if").
 
@@ -59,15 +65,17 @@ Gross Revenue → Operating Expenses → NOI → TI / LC / Capital → Unlevered
 Flow → Debt Service → Levered Cash Flow.
 
 The included sample is a 100,000 SF, $28.5M office deal (*Harbor Point Office
-Tower*) with three in-place tenants (one on a base-year stop) plus 12,000 SF of
-day-one vacancy that leases up under the MLA profile.
+Tower*): an anchor on fixed bumps, a tenant on CPI with a base-year stop and
+admin fee, a tenant on a stepped rent schedule, plus 12,000 SF of day-one
+vacancy that leases up under the MLA profile — financed with a senior loan and a
+participating mezzanine tranche.
 
 ## Project layout
 
 ```
 argussoftware/
 ├── backend/            Flask API + valuation engine
-│   ├── engine.py       Pure-Python DCF model (no numpy) — the core
+│   ├── engine.py       Pure-Python daily DCF engine (no numpy) — the core
 │   ├── app.py          REST API
 │   ├── requirements.txt
 │   └── tests/test_engine.py
@@ -76,7 +84,9 @@ argussoftware/
 │       ├── App.jsx                 state, data fetching, layout
 │       ├── api.js / format.js
 │       └── components/             assumptions, market leasing, rent roll,
-│                                   expenses, results, chart, proforma, sensitivity
+│                                   expenses, capital stack, results, chart,
+│                                   proforma, sensitivity, traditional valuation,
+│                                   portfolio
 └── README.md
 ```
 
@@ -119,6 +129,7 @@ cd backend && source .venv/bin/activate && pytest
 | GET    | `/api/health`            | Liveness check                       |
 | GET    | `/api/sample`            | Default sample scenario              |
 | POST   | `/api/analyze`           | Run a valuation on a posted scenario |
+| POST   | `/api/portfolio`         | Consolidate several deals (by id or inline) |
 | GET    | `/api/scenarios`         | List saved scenarios (persisted)     |
 | POST   | `/api/scenarios`         | Save a scenario                      |
 | GET/PUT/DELETE | `/api/scenarios/<id>` | Fetch / update / delete a scenario |
@@ -136,16 +147,16 @@ Returns the property, echoed assumptions, a per-year `cash_flow` proforma and a
 
 ## Modeling notes
 
-The engine computes the way ARGUS does — monthly, lease-by-lease, with market
-leasing assumptions, reimbursement structures, gross-up, percentage rent, and
-precise downtime/free-rent/TI/LC timing. Saved scenarios persist to disk.
+The engine computes the way ARGUS does — **daily**, lease-by-lease, with market
+leasing assumptions, CPI/stepped rent reviews, reimbursement structures (caps,
+stops, gross-up, admin fees), percentage rent, multi-tranche participating debt,
+traditional valuation methods, and portfolio consolidation. Saved scenarios
+persist to disk.
 
-What is *not* replicated (ARGUS's deeper, mostly enterprise, surface area):
-daily (sub-monthly) proration — ARGUS is internally daily, this engine is
-monthly; CPI-indexed or stepped rent-review schedules; expense caps/floors and
-recovery pools with their own caps; debt tranches, mezzanine and participating
-loans; portfolio/fund consolidation; and the traditional (non-DCF) valuation
-methods (Term & Reversion, Hardcore, Initial Yield). LC is entered as a % of
-total lease rent (one of ARGUS's own options; $/SF and stepped schedules are
-not). The engine (`backend/engine.py`) is small, documented and unit-tested
-(20 tests), so extending it further is straightforward.
+What is *not* replicated (ARGUS's deepest enterprise surface): sub-daily
+accrual; an iteratively-solved **equivalent yield**; the **Hardcore/layer**
+valuation method; cash-flow-based loan participation and full cross-collateralised
+portfolio debt; CPI tied to a published index series rather than a rate; and the
+operational layers (data import, scenario versioning, reporting packs,
+multi-user/portfolio administration). The engine (`backend/engine.py`) is small,
+documented and unit-tested (25 tests), so extending it further is straightforward.

@@ -31,3 +31,8 @@ export const saveScenario = (name, scenario) =>
 export const loadScenario = (id) => request(`/api/scenarios/${id}`);
 export const deleteScenario = (id) =>
   request(`/api/scenarios/${id}`, { method: "DELETE" });
+export const consolidatePortfolio = (ids, scenarios) =>
+  request("/api/portfolio", {
+    method: "POST",
+    body: JSON.stringify({ ids, scenarios }),
+  });

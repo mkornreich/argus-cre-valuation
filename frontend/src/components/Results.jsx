@@ -4,6 +4,7 @@ import MetricCard from "./MetricCard.jsx";
 import CashFlowChart from "./CashFlowChart.jsx";
 import CashFlowTable from "./CashFlowTable.jsx";
 import SensitivityTable from "./SensitivityTable.jsx";
+import TraditionalValuation from "./TraditionalValuation.jsx";
 
 export default function Results({ result, scenario }) {
   const [view, setView] = useState("annual");
@@ -78,6 +79,13 @@ export default function Results({ result, scenario }) {
         </div>
         <CashFlowTable rows={proformaRows} levered={!!debt} />
       </section>
+
+      {result.traditional_valuation && (
+        <section className="card">
+          <h2 className="card-title">Traditional Valuation</h2>
+          <TraditionalValuation tv={result.traditional_valuation} />
+        </section>
+      )}
 
       {result.sensitivity && (
         <section className="card">

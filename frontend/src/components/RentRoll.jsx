@@ -7,6 +7,7 @@ const BLANK_LEASE = {
   start_year: 1,
   term_years: 5,
   base_rent_psf: 32,
+  escalation_type: "fixed",
   annual_escalation_pct: 0.03,
   reimbursement_method: "net",
   free_rent_months: 0,
@@ -38,6 +39,7 @@ export default function RentRoll({ leases, onChange }) {
               <th>Start</th>
               <th>Term</th>
               <th>Rent/SF</th>
+              <th>Review</th>
               <th>Esc %</th>
               <th>Reimburse</th>
               <th>Free mo</th>
@@ -94,11 +96,24 @@ export default function RentRoll({ leases, onChange }) {
                   />
                 </td>
                 <td>
+                  <select
+                    className="cell"
+                    value={l.escalation_type || "fixed"}
+                    onChange={(e) => edit(i, { escalation_type: e.target.value })}
+                    title="Rent review basis"
+                  >
+                    <option value="fixed">Fixed</option>
+                    <option value="cpi">CPI</option>
+                    <option value="stepped">Stepped</option>
+                  </select>
+                </td>
+                <td>
                   <input
                     className="cell sm"
                     type="number"
                     step="0.1"
-                    value={(l.annual_escalation_pct * 100).toFixed(2)}
+                    disabled={l.escalation_type && l.escalation_type !== "fixed"}
+                    value={((l.annual_escalation_pct || 0) * 100).toFixed(2)}
                     onChange={(e) =>
                       edit(i, {
                         annual_escalation_pct: num(e.target.value) / 100,
@@ -123,7 +138,7 @@ export default function RentRoll({ leases, onChange }) {
                   <input
                     className="cell sm"
                     type="number"
-                    value={l.free_rent_months}
+                    value={l.free_rent_months || 0}
                     onChange={(e) =>
                       edit(i, { free_rent_months: num(e.target.value) })
                     }
@@ -142,7 +157,7 @@ export default function RentRoll({ leases, onChange }) {
             ))}
             {leases.length === 0 && (
               <tr>
-                <td colSpan={9} className="empty">
+                <td colSpan={10} className="empty">
                   No leases — space is modeled as vacant / re-leased at market.
                 </td>
               </tr>

@@ -81,6 +81,28 @@ def analyze():
     return jsonify(result)
 
 
+@app.post("/api/portfolio")
+def portfolio():
+    """Consolidate several properties into a fund-level summary.
+
+    Body: {"ids": [...saved scenario ids...], "scenarios": [...inline...]}.
+    """
+    body = request.get_json(silent=True) or {}
+    store = _load()
+    scenarios = []
+    for sid in body.get("ids", []) or []:
+        item = store.get(sid)
+        if item:
+            scenarios.append(item["scenario"])
+    scenarios.extend(body.get("scenarios", []) or [])
+    if not scenarios:
+        return jsonify({"error": "Provide at least one scenario (by id or inline)."}), 400
+    try:
+        return jsonify(engine.consolidate(scenarios))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Consolidation failed: {exc}"}), 400
+
+
 @app.get("/api/scenarios")
 def list_scenarios():
     store = _load()

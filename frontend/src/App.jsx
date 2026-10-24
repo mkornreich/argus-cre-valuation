@@ -4,13 +4,16 @@ import AssumptionsPanel from "./components/AssumptionsPanel.jsx";
 import MarketLeasingPanel from "./components/MarketLeasingPanel.jsx";
 import RentRoll from "./components/RentRoll.jsx";
 import ExpensesTable from "./components/ExpensesTable.jsx";
+import DebtTranchesPanel from "./components/DebtTranchesPanel.jsx";
 import Results from "./components/Results.jsx";
+import PortfolioView from "./components/PortfolioView.jsx";
 
 export default function App() {
   const [scenario, setScenario] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState("asset");
   const debounce = useRef(null);
 
   // Load the sample deal on first render.
@@ -76,37 +79,61 @@ export default function App() {
           <span className="brand-sub">CRE Valuation &amp; DCF</span>
         </div>
         <div className="topbar-right">
-          {busy && <span className="status">calculating…</span>}
+          {busy && mode === "asset" && <span className="status">calculating…</span>}
+          <div className="sens-toggle">
+            <button
+              className={`chip ${mode === "asset" ? "chip-on" : ""}`}
+              onClick={() => setMode("asset")}
+            >
+              Asset
+            </button>
+            <button
+              className={`chip ${mode === "portfolio" ? "chip-on" : ""}`}
+              onClick={() => setMode("portfolio")}
+            >
+              Portfolio
+            </button>
+          </div>
           <button className="btn ghost" onClick={reloadSample}>
             Reset to sample
           </button>
         </div>
       </header>
 
-      {error && <div className="banner error">{error}</div>}
+      {error && mode === "asset" && <div className="banner error">{error}</div>}
 
-      <div className="layout">
-        <aside className="sidebar">
-          <AssumptionsPanel scenario={scenario} onChange={update} />
-          <MarketLeasingPanel
-            mla={scenario.market_leasing}
-            onChange={(market_leasing) => update({ market_leasing })}
-          />
-          <RentRoll
-            leases={scenario.leases}
-            onChange={(leases) => update({ leases })}
-          />
-          <ExpensesTable
-            expenses={scenario.expenses}
-            totalSf={scenario.property.total_sf}
-            onChange={(expenses) => update({ expenses })}
-          />
-        </aside>
+      {mode === "portfolio" ? (
+        <div className="layout portfolio-layout">
+          <PortfolioView scenario={scenario} />
+        </div>
+      ) : (
+        <div className="layout">
+          <aside className="sidebar">
+            <AssumptionsPanel scenario={scenario} onChange={update} />
+            <MarketLeasingPanel
+              mla={scenario.market_leasing}
+              onChange={(market_leasing) => update({ market_leasing })}
+            />
+            <RentRoll
+              leases={scenario.leases}
+              onChange={(leases) => update({ leases })}
+            />
+            <ExpensesTable
+              expenses={scenario.expenses}
+              totalSf={scenario.property.total_sf}
+              onChange={(expenses) => update({ expenses })}
+            />
+            <DebtTranchesPanel
+              debt={scenario.debt}
+              onChange={(debt) => update({ debt })}
+            />
+          </aside>
 
-        <main className="main">
-          <Results result={result} scenario={scenario} />
-        </main>
-      </div>
+          <main className="main">
+            <Results result={result} scenario={scenario} />
+          </main>
+        </div>
+      )}
 
       <footer className="footer">
         A lease-by-lease discounted-cash-flow model in the spirit of ARGUS ·

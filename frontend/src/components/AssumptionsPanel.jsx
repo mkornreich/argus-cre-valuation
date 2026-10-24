@@ -1,14 +1,13 @@
-import { NumField, TextField, Toggle } from "./inputs.jsx";
+import { NumField, TextField } from "./inputs.jsx";
 
 export default function AssumptionsPanel({ scenario, onChange }) {
-  const { property, analysis, capital, debt } = scenario;
+  const { property, analysis, capital } = scenario;
 
   const setProperty = (patch) =>
     onChange({ property: { ...property, ...patch } });
   const setAnalysis = (patch) =>
     onChange({ analysis: { ...analysis, ...patch } });
   const setCapital = (patch) => onChange({ capital: { ...capital, ...patch } });
-  const setDebt = (patch) => onChange({ debt: { ...debt, ...patch } });
 
   return (
     <section className="panel">
@@ -129,50 +128,6 @@ export default function AssumptionsPanel({ scenario, onChange }) {
           onChange={(v) => setCapital({ reserve_psf: v })}
         />
       </div>
-
-      <h3 className="panel-subtitle">
-        Financing
-        <Toggle
-          label="Use debt"
-          checked={debt.enabled}
-          onChange={(v) => setDebt({ enabled: v })}
-        />
-      </h3>
-      {debt.enabled && (
-        <>
-          <div className="field-row">
-            <NumField
-              label="LTV"
-              suffix="%"
-              scale={100}
-              value={debt.ltv_pct}
-              onChange={(v) => setDebt({ ltv_pct: v, loan_amount: 0 })}
-            />
-            <NumField
-              label="Interest rate"
-              suffix="%"
-              scale={100}
-              value={debt.interest_rate}
-              onChange={(v) => setDebt({ interest_rate: v })}
-            />
-          </div>
-          <div className="field-row">
-            <NumField
-              label="Amortization"
-              suffix="yrs"
-              value={debt.amortization_years}
-              onChange={(v) => setDebt({ amortization_years: Math.round(v) })}
-              step="1"
-              min="0"
-            />
-            <Toggle
-              label="Interest-only"
-              checked={debt.io}
-              onChange={(v) => setDebt({ io: v })}
-            />
-          </div>
-        </>
-      )}
     </section>
   );
 }
