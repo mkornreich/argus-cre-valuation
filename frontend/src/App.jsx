@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from "./api.js";
 import AssumptionsPanel from "./components/AssumptionsPanel.jsx";
+import MarketLeasingPanel from "./components/MarketLeasingPanel.jsx";
 import RentRoll from "./components/RentRoll.jsx";
 import ExpensesTable from "./components/ExpensesTable.jsx";
 import Results from "./components/Results.jsx";
@@ -87,6 +88,10 @@ export default function App() {
       <div className="layout">
         <aside className="sidebar">
           <AssumptionsPanel scenario={scenario} onChange={update} />
+          <MarketLeasingPanel
+            mla={scenario.market_leasing}
+            onChange={(market_leasing) => update({ market_leasing })}
+          />
           <RentRoll
             leases={scenario.leases}
             onChange={(leases) => update({ leases })}

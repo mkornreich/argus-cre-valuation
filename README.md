@@ -16,23 +16,43 @@ unlevered/levered IRR, equity multiples and cash-on-cash.
 
 ## What it models
 
-- **Rent roll** — any number of leases, each with suite SF, start year, term,
-  base rent $/SF, annual escalations, expense recoveries and free rent.
-- **Re-leasing** — space not covered by an in-place lease is re-leased at market
-  rent (with growth), so a deal where leases roll before exit still has a
-  sensible going-concern value. Turnover/downtime is approximated by a general
-  vacancy & credit-loss allowance.
+Modeled after the real ARGUS Enterprise workflow (studied from Altus's feature
+documentation and market-leasing references):
+
+- **Rent roll** — in-place leases with suite SF, start year, term, base rent
+  $/SF, annual escalations, free rent and a per-lease reimbursement method.
+- **Market Leasing Assumptions (MLAs)** — the defining ARGUS feature. When a
+  lease rolls (or space starts vacant), it re-leases on a **renewal-probability-
+  weighted blend** of "renew" and "new tenant" outcomes, each with its own
+  **downtime, free rent, tenant improvements (TI) and leasing commissions (LC)**.
+  Space re-leases recursively for the length of the analysis.
+- **Absorption & turnover vacancy** — downtime on rollover is an explicit line,
+  and general vacancy is netted against it (ARGUS convention) to avoid double
+  counting.
+- **Reimbursement methods** — each lease recovers operating expenses as **Net**
+  (pro-rata share), **Base-Year Stop** (share of the increase over a base year)
+  or **Gross** (none).
 - **Operating expenses** — line-item schedule, each on a $/SF or total basis with
   its own growth rate.
-- **Capital reserves** — $/SF reserve with growth.
+- **Leasing & capital costs below NOI** — TI, LC and $/SF capital reserves reduce
+  the unlevered cash flow, exactly as in an ARGUS cash flow.
 - **Valuation** — going-in cap rate, terminal value from forward (year *N+1*) NOI
   at an exit cap, selling costs, PV of cash flows at the discount rate, NPV vs.
   purchase price, and unlevered IRR / equity multiple.
 - **Financing** — sizing by LTV, monthly-amortizing or interest-only debt, DSCR,
   levered IRR, equity multiple and average cash-on-cash.
+- **Sensitivity analysis** — a discount-rate × exit-cap grid of DCF value and
+  unlevered IRR (ARGUS "what-if").
+
+The proforma is laid out in ARGUS Enterprise order: Potential Base Rent →
+Absorption & Turnover Vacancy → Base Rent Abatements → Scheduled Base Rent →
+Expense Reimbursements → Total Tenant Revenue → General Vacancy → Effective
+Gross Revenue → Operating Expenses → NOI → TI / LC / Capital → Unlevered Cash
+Flow → Debt Service → Levered Cash Flow.
 
 The included sample is a 100,000 SF, $28.5M office deal (*Harbor Point Office
-Tower*) with four tenants.
+Tower*) with three in-place tenants (one on a base-year stop) plus 12,000 SF of
+day-one vacancy that leases up under the MLA profile.
 
 ## Project layout
 
@@ -47,7 +67,8 @@ argussoftware/
 │   └── src/
 │       ├── App.jsx                 state, data fetching, layout
 │       ├── api.js / format.js
-│       └── components/             assumptions, rent roll, expenses, results, chart
+│       └── components/             assumptions, market leasing, rent roll,
+│                                   expenses, results, chart, proforma, sensitivity
 └── README.md
 ```
 
@@ -108,9 +129,11 @@ Returns the property, echoed assumptions, a per-year `cash_flow` proforma and a
 ## Modeling notes & simplifications
 
 This captures the *shape* of an ARGUS analysis, not every feature. Intentional
-simplifications: no explicit tenant-improvement / leasing-commission (TI/LC)
-cashflows on rollover (approximated via the vacancy allowance), annual rather
-than monthly cash-flow periods, recoveries grown at the lease escalator, and an
+simplifications: **annual** rather than monthly cash-flow periods (downtime and
+free rent are applied as fractions of the commencement year); renewal and new
+leases both re-lease at market rent (no separate renewal-rent discount); LC is a
+flat % of total lease base rent; pro-rata reimbursement share is tenant SF ÷
+building SF (no occupancy gross-up); no percentage rent, mid-year acquisition
+timing, or TI/LC on the in-place leases (assumed already spent); and an
 in-memory scenario store. The engine (`backend/engine.py`) is small, documented
-and unit-tested, so extending it (TI/LC, percentage rent, partial-year timing,
-a database) is straightforward.
+and unit-tested (19 tests), so extending it is straightforward.

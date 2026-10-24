@@ -1,10 +1,11 @@
 import { currency, percent } from "../format.js";
 
-// The year-by-year operating statement — the proforma. Rows are line items,
-// columns are years, matching how ARGUS presents a cash flow.
+// The year-by-year cash flow, laid out in ARGUS Enterprise order:
+// Potential Base Rent -> (Absorption & Turnover Vacancy, Abatements) ->
+// Scheduled Base Rent -> + Reimbursements -> Total Tenant Revenue ->
+// (General Vacancy) -> EGR -> (Opex) -> NOI -> (TI, LC, Capital) ->
+// Unlevered Cash Flow -> (Debt Service) -> Levered Cash Flow.
 export default function CashFlowTable({ rows, levered }) {
-  const years = rows.map((r) => r.year);
-
   const line = (label, key, { negative = false, bold = false, muted = false } = {}) => (
     <tr className={`${bold ? "row-bold" : ""} ${muted ? "row-muted" : ""}`}>
       <th scope="row">{label}</th>
@@ -22,23 +23,27 @@ export default function CashFlowTable({ rows, levered }) {
         <thead>
           <tr>
             <th scope="col">Line item</th>
-            {years.map((yr) => (
-              <th key={yr} scope="col">
-                {yr}
+            {rows.map((r) => (
+              <th key={r.year} scope="col">
+                {r.year}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {line("Base Rental Revenue", "base_rental_revenue")}
-          {line("Market Rent (vacant/re-leased)", "market_rent_on_vacant", { muted: true })}
+          {line("Potential Base Rent", "potential_base_rent")}
+          {line("Absorption & Turnover Vacancy", "absorption_turnover_vacancy", { negative: true, muted: true })}
+          {line("Base Rent Abatements", "base_rent_abatements", { negative: true, muted: true })}
+          {line("Scheduled Base Rent", "scheduled_base_rent", { bold: true })}
           {line("Expense Reimbursements", "expense_reimbursements")}
-          {line("Potential Gross Revenue", "potential_gross_revenue", { bold: true })}
+          {line("Total Tenant Revenue", "total_tenant_revenue", { bold: true })}
           {line("General Vacancy & Credit Loss", "general_vacancy", { negative: true })}
           {line("Effective Gross Revenue", "effective_gross_revenue", { bold: true })}
           {line("Operating Expenses", "operating_expenses", { negative: true })}
           {line("Net Operating Income", "noi", { bold: true })}
-          {line("Capital Reserve", "capital_reserve", { negative: true })}
+          {line("Tenant Improvements", "tenant_improvements", { negative: true, muted: true })}
+          {line("Leasing Commissions", "leasing_commissions", { negative: true, muted: true })}
+          {line("Capital Reserve", "capital_reserve", { negative: true, muted: true })}
           {line("Unlevered Cash Flow", "unlevered_cash_flow", { bold: true })}
           {levered && line("Debt Service", "debt_service", { negative: true })}
           {levered && line("Levered Cash Flow", "levered_cash_flow", { bold: true })}

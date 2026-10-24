@@ -8,7 +8,7 @@ const BLANK_LEASE = {
   term_years: 5,
   base_rent_psf: 32,
   annual_escalation_pct: 0.03,
-  recovery_psf: 8,
+  reimbursement_method: "net",
   free_rent_months: 0,
 };
 
@@ -39,7 +39,7 @@ export default function RentRoll({ leases, onChange }) {
               <th>Term</th>
               <th>Rent/SF</th>
               <th>Esc %</th>
-              <th>Recov/SF</th>
+              <th>Reimburse</th>
               <th>Free mo</th>
               <th aria-label="remove" />
             </tr>
@@ -107,15 +107,17 @@ export default function RentRoll({ leases, onChange }) {
                   />
                 </td>
                 <td>
-                  <input
+                  <select
                     className="cell"
-                    type="number"
-                    step="0.25"
-                    value={l.recovery_psf}
+                    value={l.reimbursement_method || "net"}
                     onChange={(e) =>
-                      edit(i, { recovery_psf: num(e.target.value) })
+                      edit(i, { reimbursement_method: e.target.value })
                     }
-                  />
+                  >
+                    <option value="net">Net</option>
+                    <option value="base_stop">Base stop</option>
+                    <option value="gross">Gross</option>
+                  </select>
                 </td>
                 <td>
                   <input

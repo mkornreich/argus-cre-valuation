@@ -2,6 +2,7 @@ import { currency, percent, multiple } from "../format.js";
 import MetricCard from "./MetricCard.jsx";
 import CashFlowChart from "./CashFlowChart.jsx";
 import CashFlowTable from "./CashFlowTable.jsx";
+import SensitivityTable from "./SensitivityTable.jsx";
 
 export default function Results({ result, scenario }) {
   if (!result) return <div className="placeholder">Enter assumptions to value the deal.</div>;
@@ -43,6 +44,7 @@ export default function Results({ result, scenario }) {
         ) : (
           <MetricCard label="Price / SF" value={currency(m.price_per_sf)} hint={`${currency(m.purchase_price)} total`} />
         )}
+        <MetricCard label="Leasing & Capital" value={currency(m.total_leasing_capital)} hint="TI + LC + reserves over hold" />
       </section>
 
       <section className="card">
@@ -54,6 +56,13 @@ export default function Results({ result, scenario }) {
         <h2 className="card-title">Operating Proforma</h2>
         <CashFlowTable rows={result.cash_flow} levered={!!debt} />
       </section>
+
+      {result.sensitivity && (
+        <section className="card">
+          <h2 className="card-title">Sensitivity — Discount Rate × Exit Cap</h2>
+          <SensitivityTable sensitivity={result.sensitivity} />
+        </section>
+      )}
     </div>
   );
 }
