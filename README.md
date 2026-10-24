@@ -2,8 +2,8 @@
 
 A working re-creation of the core of **ARGUS**: a lease-by-lease commercial
 real-estate **discounted-cash-flow (DCF) valuation** tool. Enter a property, its
-rent roll, operating expenses and (optionally) debt; the engine projects an
-annual cash flow over the hold period and values the asset with a direct-cap
+rent roll, operating expenses and (optionally) debt; the engine projects a
+daily cash flow over the hold period and values the asset with a direct-cap
 terminal value and a full DCF — returning NOI, cap rates, DCF value, NPV,
 unlevered/levered IRR, equity multiples and cash-on-cash.
 
@@ -11,6 +11,32 @@ unlevered/levered IRR, equity multiples and cash-on-cash.
 > (interactive UI). Figures are illustrative — not investment advice.
 
 ![stack](https://img.shields.io/badge/backend-Flask-blue) ![stack](https://img.shields.io/badge/frontend-React%2BVite-success)
+
+![ARGUS overview](docs/screenshots/01-overview.jpg)
+
+## Screenshots
+
+**Operating proforma** — the full ARGUS cash flow in financial-year order
+(Potential Base Rent → … → Levered Cash Flow), with the market leasing
+assumptions on the left. Toggle Annual / Monthly.
+
+![Operating proforma](docs/screenshots/02-proforma.jpg)
+
+**Traditional valuation** — Net Initial, Reversionary and Equivalent yields, a
+Term & Reversion and a Hardcore/layer value, beside the editable rent roll
+(with CSV import).
+
+![Traditional valuation](docs/screenshots/03-valuation.jpg)
+
+**Sensitivity & capital stack** — a discount-rate × exit-cap heatmap of DCF
+value (or IRR), with the multi-tranche capital stack and operating expenses.
+
+![Sensitivity and capital stack](docs/screenshots/04-sensitivity.jpg)
+
+**Portfolio / fund** — consolidate several deals into blended value, cap rate,
+equity/debt and a portfolio-level IRR, with a consolidated cash flow.
+
+![Portfolio consolidation](docs/screenshots/05-portfolio.jpg)
 
 ---
 
