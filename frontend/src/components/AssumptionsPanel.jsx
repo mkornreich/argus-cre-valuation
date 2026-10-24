@@ -58,11 +58,27 @@ export default function AssumptionsPanel({ scenario, onChange }) {
           step="1"
         />
         <NumField
+          label="Start month"
+          value={analysis.start_month}
+          onChange={(v) => setAnalysis({ start_month: Math.round(v) })}
+          step="1"
+          min="1"
+        />
+      </div>
+      <div className="field-row">
+        <NumField
           label="Discount rate"
           suffix="%"
           scale={100}
           value={analysis.discount_rate}
           onChange={(v) => setAnalysis({ discount_rate: v })}
+        />
+        <NumField
+          label="Expense gross-up"
+          suffix="%"
+          scale={100}
+          value={analysis.expense_gross_up_pct}
+          onChange={(v) => setAnalysis({ expense_gross_up_pct: v })}
         />
       </div>
       <div className="field-row">

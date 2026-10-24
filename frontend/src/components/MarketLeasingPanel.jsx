@@ -22,22 +22,6 @@ export default function MarketLeasingPanel({ mla, onChange }) {
           value={mla.renewal_probability}
           onChange={(v) => set({ renewal_probability: v })}
         />
-        <NumField
-          label="Market term"
-          suffix="yrs"
-          step="1"
-          value={mla.market_term_years}
-          onChange={(v) => set({ market_term_years: Math.round(v) })}
-        />
-      </div>
-
-      <div className="field-row">
-        <NumField
-          label="Downtime (new)"
-          suffix="mo"
-          value={mla.downtime_months}
-          onChange={(v) => set({ downtime_months: v })}
-        />
         <label className="field">
           <span className="field-label">Reimbursement</span>
           <span className="field-input">
@@ -52,6 +36,37 @@ export default function MarketLeasingPanel({ mla, onChange }) {
             </select>
           </span>
         </label>
+      </div>
+
+      <div className="field-row">
+        <NumField
+          label="New term"
+          suffix="yrs"
+          value={mla.market_term_years}
+          onChange={(v) => set({ market_term_years: v })}
+        />
+        <NumField
+          label="Renewal term"
+          suffix="yrs"
+          value={mla.renewal_term_years}
+          onChange={(v) => set({ renewal_term_years: v })}
+        />
+      </div>
+
+      <div className="field-row">
+        <NumField
+          label="Downtime (new)"
+          suffix="mo"
+          value={mla.downtime_months}
+          onChange={(v) => set({ downtime_months: v })}
+        />
+        <NumField
+          label="Renewal rent"
+          prefix="$"
+          suffix="/sf"
+          value={mla.renewal_market_rent_psf}
+          onChange={(v) => set({ renewal_market_rent_psf: v })}
+        />
       </div>
 
       <div className="mla-grid">

@@ -3,6 +3,7 @@ backend/.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+backend/scenarios.json
 
 # Node / frontend
 frontend/node_modules/

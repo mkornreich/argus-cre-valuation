@@ -1,6 +1,13 @@
 // Editable operating-expense schedule. Each line grows at its own rate.
 
-const BLANK_EXPENSE = { name: "New Expense", amount: 1.0, basis: "psf", growth_pct: 0.03 };
+const BLANK_EXPENSE = {
+  name: "New Expense",
+  amount: 1.0,
+  basis: "psf",
+  growth_pct: 0.03,
+  recoverable: true,
+  variable: true,
+};
 
 export default function ExpensesTable({ expenses, totalSf, onChange }) {
   function edit(i, patch) {
@@ -31,6 +38,8 @@ export default function ExpensesTable({ expenses, totalSf, onChange }) {
               <th>Amount</th>
               <th>Basis</th>
               <th>Growth %</th>
+              <th title="Recoverable from tenants">Rec</th>
+              <th title="Variable (occupancy-sensitive) — grossed up">Var</th>
               <th aria-label="remove" />
             </tr>
           </thead>
@@ -73,6 +82,26 @@ export default function ExpensesTable({ expenses, totalSf, onChange }) {
                       edit(i, { growth_pct: num(ev.target.value) / 100 })
                     }
                   />
+                </td>
+                <td>
+                  <div className="exp-flags">
+                    <input
+                      type="checkbox"
+                      checked={e.recoverable !== false}
+                      onChange={(ev) => edit(i, { recoverable: ev.target.checked })}
+                      title="Recoverable"
+                    />
+                  </div>
+                </td>
+                <td>
+                  <div className="exp-flags">
+                    <input
+                      type="checkbox"
+                      checked={e.variable !== false}
+                      onChange={(ev) => edit(i, { variable: ev.target.checked })}
+                      title="Variable"
+                    />
+                  </div>
                 </td>
                 <td>
                   <button

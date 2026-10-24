@@ -398,6 +398,23 @@ select.cell {
   letter-spacing: 1px;
   color: var(--navy);
 }
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.card-head .card-title {
+  margin: 0;
+}
+.exp-flags {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.exp-flags input {
+  accent-color: var(--teal);
+}
 
 /* ---- chart ---- */
 .chart svg {

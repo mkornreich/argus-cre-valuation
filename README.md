@@ -19,19 +19,27 @@ unlevered/levered IRR, equity multiples and cash-on-cash.
 Modeled after the real ARGUS Enterprise workflow (studied from Altus's feature
 documentation and market-leasing references):
 
-- **Rent roll** — in-place leases with suite SF, start year, term, base rent
-  $/SF, annual escalations, free rent and a per-lease reimbursement method.
+- **Monthly engine.** Like ARGUS, the model computes every line on a **monthly**
+  axis with exact proration — a lease that commences or expires mid-month,
+  fractional downtime from probability weighting, free-rent burn-off and the
+  month a TI/LC check is cut are all precise, not rounded to whole years. The UI
+  shows either the annual roll-up or the full monthly cash flow.
+- **Rent roll** — in-place leases with suite SF, start year/month, term, base
+  rent $/SF, annual escalations, free rent, a per-lease reimbursement method,
+  optional upfront TI/LC and optional **percentage rent** (retail).
 - **Market Leasing Assumptions (MLAs)** — the defining ARGUS feature. When a
   lease rolls (or space starts vacant), it re-leases on a **renewal-probability-
   weighted blend** of "renew" and "new tenant" outcomes, each with its own
-  **downtime, free rent, tenant improvements (TI) and leasing commissions (LC)**.
-  Space re-leases recursively for the length of the analysis.
+  market rent, **term, downtime, free rent, tenant improvements (TI) and leasing
+  commissions (LC)**. Space re-leases recursively for the length of the analysis.
 - **Absorption & turnover vacancy** — downtime on rollover is an explicit line,
   and general vacancy is netted against it (ARGUS convention) to avoid double
   counting.
 - **Reimbursement methods** — each lease recovers operating expenses as **Net**
-  (pro-rata share), **Base-Year Stop** (share of the increase over a base year)
-  or **Gross** (none).
+  (pro-rata share), **Base-Year Stop** (share of the increase over the lease's
+  own first twelve months) or **Gross** (none), with optional **occupancy
+  gross-up** of variable recoverable expenses and recoverable / non-recoverable
+  and fixed / variable expense flags.
 - **Operating expenses** — line-item schedule, each on a $/SF or total basis with
   its own growth rate.
 - **Leasing & capital costs below NOI** — TI, LC and $/SF capital reserves reduce
@@ -111,7 +119,7 @@ cd backend && source .venv/bin/activate && pytest
 | GET    | `/api/health`            | Liveness check                       |
 | GET    | `/api/sample`            | Default sample scenario              |
 | POST   | `/api/analyze`           | Run a valuation on a posted scenario |
-| GET    | `/api/scenarios`         | List saved scenarios (in-memory)     |
+| GET    | `/api/scenarios`         | List saved scenarios (persisted)     |
 | POST   | `/api/scenarios`         | Save a scenario                      |
 | GET/PUT/DELETE | `/api/scenarios/<id>` | Fetch / update / delete a scenario |
 
@@ -126,14 +134,18 @@ curl -s localhost:5001/api/sample \
 Returns the property, echoed assumptions, a per-year `cash_flow` proforma and a
 `metrics` block (DCF value, cap rates, IRRs, equity multiples, debt metrics).
 
-## Modeling notes & simplifications
+## Modeling notes
 
-This captures the *shape* of an ARGUS analysis, not every feature. Intentional
-simplifications: **annual** rather than monthly cash-flow periods (downtime and
-free rent are applied as fractions of the commencement year); renewal and new
-leases both re-lease at market rent (no separate renewal-rent discount); LC is a
-flat % of total lease base rent; pro-rata reimbursement share is tenant SF ÷
-building SF (no occupancy gross-up); no percentage rent, mid-year acquisition
-timing, or TI/LC on the in-place leases (assumed already spent); and an
-in-memory scenario store. The engine (`backend/engine.py`) is small, documented
-and unit-tested (19 tests), so extending it is straightforward.
+The engine computes the way ARGUS does — monthly, lease-by-lease, with market
+leasing assumptions, reimbursement structures, gross-up, percentage rent, and
+precise downtime/free-rent/TI/LC timing. Saved scenarios persist to disk.
+
+What is *not* replicated (ARGUS's deeper, mostly enterprise, surface area):
+daily (sub-monthly) proration — ARGUS is internally daily, this engine is
+monthly; CPI-indexed or stepped rent-review schedules; expense caps/floors and
+recovery pools with their own caps; debt tranches, mezzanine and participating
+loans; portfolio/fund consolidation; and the traditional (non-DCF) valuation
+methods (Term & Reversion, Hardcore, Initial Yield). LC is entered as a % of
+total lease rent (one of ARGUS's own options; $/SF and stepped schedules are
+not). The engine (`backend/engine.py`) is small, documented and unit-tested
+(20 tests), so extending it further is straightforward.

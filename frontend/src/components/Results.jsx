@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { currency, percent, multiple } from "../format.js";
 import MetricCard from "./MetricCard.jsx";
 import CashFlowChart from "./CashFlowChart.jsx";
@@ -5,11 +6,14 @@ import CashFlowTable from "./CashFlowTable.jsx";
 import SensitivityTable from "./SensitivityTable.jsx";
 
 export default function Results({ result, scenario }) {
+  const [view, setView] = useState("annual");
   if (!result) return <div className="placeholder">Enter assumptions to value the deal.</div>;
 
   const m = result.metrics;
   const debt = m.debt;
   const npvPositive = m.npv >= 0;
+  const hasMonthly = Array.isArray(result.monthly_cash_flow);
+  const proformaRows = view === "monthly" && hasMonthly ? result.monthly_cash_flow : result.cash_flow;
 
   return (
     <div className="results">
@@ -53,8 +57,26 @@ export default function Results({ result, scenario }) {
       </section>
 
       <section className="card">
-        <h2 className="card-title">Operating Proforma</h2>
-        <CashFlowTable rows={result.cash_flow} levered={!!debt} />
+        <div className="card-head">
+          <h2 className="card-title">Operating Proforma</h2>
+          {hasMonthly && (
+            <div className="sens-toggle">
+              <button
+                className={`chip ${view === "annual" ? "chip-on" : ""}`}
+                onClick={() => setView("annual")}
+              >
+                Annual
+              </button>
+              <button
+                className={`chip ${view === "monthly" ? "chip-on" : ""}`}
+                onClick={() => setView("monthly")}
+              >
+                Monthly
+              </button>
+            </div>
+          )}
+        </div>
+        <CashFlowTable rows={proformaRows} levered={!!debt} />
       </section>
 
       {result.sensitivity && (
