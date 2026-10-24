@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import * as api from "../api.js";
 import { currency, percent, number } from "../format.js";
 import MetricCard from "./MetricCard.jsx";
+import { NumField, Toggle } from "./inputs.jsx";
 
 // Fund-level consolidation: save deals, pick which to include, and roll them up
 // into portfolio value, blended cap rate and a portfolio-level IRR.
+const BLANK_FUND_DEBT = {
+  enabled: false,
+  ltv_pct: 0.5,
+  interest_rate: 0.055,
+  amortization_years: 30,
+  io: false,
+};
+
 export default function PortfolioView({ scenario }) {
   const [saved, setSaved] = useState([]);
   const [selected, setSelected] = useState({});
@@ -12,8 +21,11 @@ export default function PortfolioView({ scenario }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [fundDebt, setFundDebt] = useState(BLANK_FUND_DEBT);
+  const [portfolios, setPortfolios] = useState([]);
+  const [portfolioName, setPortfolioName] = useState("New Fund");
 
-  const refresh = () =>
+  const refresh = () => {
     api.listScenarios().then((list) => {
       setSaved(list);
       setSelected((prev) => {
@@ -24,10 +36,15 @@ export default function PortfolioView({ scenario }) {
         return next;
       });
     }).catch((e) => setError(e.message));
+    api.listPortfolios().then(setPortfolios).catch(() => {});
+  };
 
   useEffect(() => {
     refresh();
   }, []);
+
+  const selectedIds = () => saved.filter((s) => selected[s.id]).map((s) => s.id);
+  const fund = () => (fundDebt.enabled ? fundDebt : undefined);
 
   async function saveCurrent() {
     try {
@@ -47,13 +64,13 @@ export default function PortfolioView({ scenario }) {
     setBusy(true);
     setError(null);
     try {
-      const ids = saved.filter((s) => selected[s.id]).map((s) => s.id);
+      const ids = selectedIds();
       const scenarios = includeCurrent ? [scenario] : [];
       if (ids.length + scenarios.length === 0) {
         setError("Select at least one deal (or include the current one).");
         setResult(null);
       } else {
-        setResult(await api.consolidatePortfolio(ids, scenarios));
+        setResult(await api.consolidatePortfolio(ids, scenarios, fund()));
       }
     } catch (e) {
       setError(e.message);
@@ -61,6 +78,28 @@ export default function PortfolioView({ scenario }) {
       setBusy(false);
     }
   }
+
+  async function savePortfolio() {
+    try {
+      await api.savePortfolio(portfolioName, selectedIds(), fund());
+      api.listPortfolios().then(setPortfolios);
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function loadPortfolio(id) {
+    setBusy(true);
+    try {
+      setResult(await api.loadPortfolio(id));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const setFd = (patch) => setFundDebt((p) => ({ ...p, ...patch }));
 
   const t = result?.totals;
 
@@ -129,6 +168,41 @@ export default function PortfolioView({ scenario }) {
             </tbody>
           </table>
         )}
+
+        <h3 className="panel-subtitle">
+          Cross-collateralised Fund Debt
+          <Toggle label="Use fund debt" checked={fundDebt.enabled} onChange={(v) => setFd({ enabled: v })} />
+        </h3>
+        {fundDebt.enabled && (
+          <div className="field-row">
+            <NumField label="LTV" suffix="%" scale={100} value={fundDebt.ltv_pct} onChange={(v) => setFd({ ltv_pct: v })} />
+            <NumField label="Rate" suffix="%" scale={100} value={fundDebt.interest_rate} onChange={(v) => setFd({ interest_rate: v })} />
+            <NumField label="Amort" suffix="yrs" step="1" value={fundDebt.amortization_years} onChange={(v) => setFd({ amortization_years: Math.round(v) })} />
+            <Toggle label="IO" checked={fundDebt.io} onChange={(v) => setFd({ io: v })} />
+          </div>
+        )}
+
+        <h3 className="panel-subtitle">Saved Funds</h3>
+        <div className="field-row" style={{ alignItems: "flex-end" }}>
+          <label className="field">
+            <span className="field-label">Fund name</span>
+            <span className="field-input">
+              <input value={portfolioName} onChange={(e) => setPortfolioName(e.target.value)} />
+            </span>
+          </label>
+          <button className="btn tiny" onClick={savePortfolio}>
+            Save fund
+          </button>
+        </div>
+        {portfolios.length > 0 && (
+          <div className="fund-chips">
+            {portfolios.map((p) => (
+              <button key={p.id} className="chip" onClick={() => loadPortfolio(p.id)}>
+                {p.name} ({p.deals})
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {t && (
@@ -139,6 +213,14 @@ export default function PortfolioView({ scenario }) {
             <MetricCard label="Blended Going-in Cap" value={percent(t.blended_going_in_cap)} hint={`NOI ${currency(t.year1_noi)}`} />
             <MetricCard label="Portfolio IRR" value={percent(t.portfolio_unlevered_irr)} hint="unlevered" accent />
             <MetricCard label="Equity / Debt" value={currency(t.equity_invested)} hint={`${currency(t.loan_amount)} debt`} />
+            {result.fund_debt && (
+              <MetricCard
+                label="Fund-Levered IRR"
+                value={percent(result.fund_debt.fund_levered_irr)}
+                hint={`${currency(result.fund_debt.loan_amount)} facility · DSCR ${result.fund_debt.dscr_year1}`}
+                accent
+              />
+            )}
           </section>
 
           <section className="card">

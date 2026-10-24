@@ -19,16 +19,16 @@ unlevered/levered IRR, equity multiples and cash-on-cash.
 Modeled after the real ARGUS Enterprise workflow (studied from Altus's feature
 documentation and market-leasing references):
 
-- **Daily engine.** Like ARGUS, every line is accrued on a **daily** grid
-  (365.25-day year) and rolled up to months and financial years — mid-period
-  commencements, fractional downtime from probability weighting, free-rent
-  burn-off and the day a TI/LC check is cut are exact. The UI shows the annual
-  roll-up or the full monthly cash flow.
+- **Calendar-daily engine.** Like ARGUS, every line is accrued on the **actual
+  calendar** (real dates, leap years) and rolled up to months and true 12-month
+  financial years — so fiscal-year starts, mid-period commencements, fractional
+  downtime, free-rent burn-off and the day a TI/LC check is cut are all exact.
+  The UI shows the annual roll-up or the full monthly cash flow.
 - **Rent roll** — in-place leases with suite SF, start year/month, term, base
   rent $/SF, a per-lease reimbursement method, optional upfront TI/LC and
   optional **percentage rent** (retail).
-- **Rent reviews** — fixed escalations, **CPI indexation**, or an explicit
-  **stepped** rent schedule, chosen per lease.
+- **Rent reviews** — fixed escalations, **CPI** (a flat rate *or* a published
+  **index series**), or an explicit **stepped** rent schedule, chosen per lease.
 - **Market Leasing Assumptions (MLAs)** — the defining ARGUS feature. When a
   lease rolls (or space starts vacant), it re-leases on a **renewal-probability-
   weighted blend** of "renew" and "new tenant" outcomes, each with its own
@@ -47,14 +47,19 @@ documentation and market-leasing references):
   and $/SF capital reserves, exactly as in an ARGUS cash flow.
 - **DCF valuation** — going-in cap, terminal value from forward NOI at an exit
   cap, selling costs, NPV vs. price, unlevered IRR / equity multiple.
-- **Traditional valuation** — **Net Initial Yield**, **Reversionary Yield**, and
-  a **Term & Reversion** capitalisation (passing income capitalised to the WALT,
-  plus the deferred reversion to market rent).
+- **Traditional valuation** — **Net Initial Yield**, **Reversionary Yield**, an
+  iteratively-solved **Equivalent Yield**, a **Term & Reversion** capitalisation,
+  and the **Hardcore / layer** method.
 - **Financing** — a full **capital stack**: multiple **tranches** (senior /
   mezzanine), each interest-only or amortizing, with **participating** loans
-  (a lender share of net reversion); DSCR, levered IRR, equity multiple, CoC.
+  (a lender share of the reversion *and/or* of annual cash flow); DSCR, levered
+  IRR, equity multiple, CoC.
 - **Portfolio / fund consolidation** — roll several deals into blended value,
-  cap rate, equity/debt and a portfolio-level IRR, with a consolidated cash flow.
+  cap rate, equity/debt and a portfolio-level IRR, optionally with a
+  **cross-collateralised fund-level loan**; save and reload **named funds**.
+- **Operations** — **CSV rent-roll import**, an **.xlsx report pack** (summary,
+  annual & monthly cash flow, rent roll, sensitivity, traditional valuation),
+  and **versioned** saved scenarios (persisted to disk).
 - **Sensitivity analysis** — a discount-rate × exit-cap grid of DCF value and
   unlevered IRR (ARGUS "what-if").
 
@@ -75,10 +80,11 @@ participating mezzanine tranche.
 ```
 argussoftware/
 ├── backend/            Flask API + valuation engine
-│   ├── engine.py       Pure-Python daily DCF engine (no numpy) — the core
+│   ├── engine.py       Pure-Python calendar-daily engine (no numpy) — the core
+│   ├── report.py       .xlsx report-pack builder (openpyxl)
 │   ├── app.py          REST API
 │   ├── requirements.txt
-│   └── tests/test_engine.py
+│   └── tests/          test_engine.py, test_app.py
 ├── frontend/           React + Vite single-page app
 │   └── src/
 │       ├── App.jsx                 state, data fetching, layout
@@ -129,10 +135,14 @@ cd backend && source .venv/bin/activate && pytest
 | GET    | `/api/health`            | Liveness check                       |
 | GET    | `/api/sample`            | Default sample scenario              |
 | POST   | `/api/analyze`           | Run a valuation on a posted scenario |
-| POST   | `/api/portfolio`         | Consolidate several deals (by id or inline) |
+| POST   | `/api/report`            | Download an `.xlsx` report pack      |
+| POST   | `/api/import/rentroll`   | Parse a CSV rent roll into leases    |
+| POST   | `/api/portfolio`         | Consolidate deals (+ optional fund debt) |
+| GET/POST/DELETE | `/api/portfolios[/<id>]` | List / save / load / delete named funds |
 | GET    | `/api/scenarios`         | List saved scenarios (persisted)     |
-| POST   | `/api/scenarios`         | Save a scenario                      |
-| GET/PUT/DELETE | `/api/scenarios/<id>` | Fetch / update / delete a scenario |
+| POST   | `/api/scenarios`         | Save a scenario (creates version 1)  |
+| GET/PUT/DELETE | `/api/scenarios/<id>` | Fetch / update (new version) / delete |
+| GET    | `/api/scenarios/<id>/versions` | List a scenario's version history |
 
 **Analyze example:**
 
@@ -147,16 +157,16 @@ Returns the property, echoed assumptions, a per-year `cash_flow` proforma and a
 
 ## Modeling notes
 
-The engine computes the way ARGUS does — **daily**, lease-by-lease, with market
-leasing assumptions, CPI/stepped rent reviews, reimbursement structures (caps,
-stops, gross-up, admin fees), percentage rent, multi-tranche participating debt,
-traditional valuation methods, and portfolio consolidation. Saved scenarios
-persist to disk.
+The engine computes the way ARGUS does — on the **calendar day**, lease-by-lease,
+with market leasing assumptions, fixed/CPI/stepped rent reviews, reimbursement
+structures (caps, stops, gross-up, admin fees), percentage rent, multi-tranche
+participating debt (reversion *and* cash-flow), all five valuation methods, and
+portfolio consolidation with cross-collateralised fund debt. Scenarios are
+versioned, importable from CSV, and exportable as an `.xlsx` report pack.
 
-What is *not* replicated (ARGUS's deepest enterprise surface): sub-daily
-accrual; an iteratively-solved **equivalent yield**; the **Hardcore/layer**
-valuation method; cash-flow-based loan participation and full cross-collateralised
-portfolio debt; CPI tied to a published index series rather than a rate; and the
-operational layers (data import, scenario versioning, reporting packs,
-multi-user/portfolio administration). The engine (`backend/engine.py`) is small,
-documented and unit-tested (25 tests), so extending it further is straightforward.
+Two items from the earlier "remaining" list are deliberately left out because
+they are not meaningful here: **sub-daily** accrual (the calendar day is ARGUS's
+own finest granularity), and real **multi-user authentication / accounts** (this
+is a single-user local tool — the collaborative piece, named funds, is
+implemented instead). The engine (`backend/engine.py`) is small, documented and
+unit-tested (**28 tests**), so extending it further is straightforward.

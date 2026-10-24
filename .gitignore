@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 backend/scenarios.json
+backend/portfolios.json
 
 # Node / frontend
 frontend/node_modules/

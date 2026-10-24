@@ -43,7 +43,8 @@ export default function DebtTranchesPanel({ debt, onChange }) {
                 <th>Rate %</th>
                 <th>Amort</th>
                 <th title="Interest-only">IO</th>
-                <th title="Lender participation in reversion">Part %</th>
+                <th title="Lender participation in reversion">Rev %</th>
+                <th title="Lender participation in annual cash flow">CF %</th>
                 <th aria-label="remove" />
               </tr>
             </thead>
@@ -112,6 +113,15 @@ export default function DebtTranchesPanel({ debt, onChange }) {
                     />
                   </td>
                   <td>
+                    <input
+                      className="cell sm"
+                      type="number"
+                      step="1"
+                      value={((t.participation_cf_pct || 0) * 100).toFixed(0)}
+                      onChange={(e) => editT(i, { participation_cf_pct: num(e.target.value) / 100 })}
+                    />
+                  </td>
+                  <td>
                     <button className="btn tiny danger" onClick={() => removeT(i)} title="Remove">
                       ×
                     </button>
@@ -120,7 +130,7 @@ export default function DebtTranchesPanel({ debt, onChange }) {
               ))}
               {tranches.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="empty">
+                  <td colSpan={9} className="empty">
                     No debt — unlevered analysis. Add a tranche to lever the deal.
                   </td>
                 </tr>

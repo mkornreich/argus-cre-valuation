@@ -31,8 +31,40 @@ export const saveScenario = (name, scenario) =>
 export const loadScenario = (id) => request(`/api/scenarios/${id}`);
 export const deleteScenario = (id) =>
   request(`/api/scenarios/${id}`, { method: "DELETE" });
-export const consolidatePortfolio = (ids, scenarios) =>
+export const consolidatePortfolio = (ids, scenarios, fund_debt) =>
   request("/api/portfolio", {
     method: "POST",
-    body: JSON.stringify({ ids, scenarios }),
+    body: JSON.stringify({ ids, scenarios, fund_debt }),
   });
+
+export const importRentroll = (csv) =>
+  request("/api/import/rentroll", { method: "POST", body: JSON.stringify({ csv }) });
+
+export const listPortfolios = () => request("/api/portfolios");
+export const savePortfolio = (name, ids, fund_debt) =>
+  request("/api/portfolios", {
+    method: "POST",
+    body: JSON.stringify({ name, ids, fund_debt }),
+  });
+export const loadPortfolio = (id) => request(`/api/portfolios/${id}`);
+export const deletePortfolioById = (id) =>
+  request(`/api/portfolios/${id}`, { method: "DELETE" });
+
+// Fetch the .xlsx report pack and trigger a browser download.
+export async function downloadReport(scenario) {
+  const res = await fetch("/api/report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(scenario),
+  });
+  if (!res.ok) throw new Error("Report generation failed");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(scenario.property?.name || "argus-report").replace(/\s+/g, "_")}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

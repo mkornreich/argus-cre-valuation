@@ -94,6 +94,14 @@ export default function App() {
               Portfolio
             </button>
           </div>
+          {mode === "asset" && (
+            <button
+              className="btn ghost"
+              onClick={() => api.downloadReport(scenario).catch((e) => setError(e.message))}
+            >
+              Download report
+            </button>
+          )}
           <button className="btn ghost" onClick={reloadSample}>
             Reset to sample
           </button>

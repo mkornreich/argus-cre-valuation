@@ -673,6 +673,37 @@ select.cell {
   flex-direction: column;
   gap: 16px;
 }
+.fund-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ---- csv import ---- */
+.import-box {
+  margin-bottom: 10px;
+}
+.import-area {
+  width: 100%;
+  min-height: 80px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  padding: 8px;
+  resize: vertical;
+}
+.import-err {
+  color: var(--bad);
+  font-size: 11px;
+  margin: 4px 0;
+}
+.import-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
 
 /* ---- misc ---- */
 .banner {

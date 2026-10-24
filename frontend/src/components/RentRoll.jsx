@@ -1,3 +1,6 @@
+import { useState } from "react";
+import * as api from "../api.js";
+
 // Editable lease rent roll. Each row is one lease; values write straight back
 // into the scenario so the valuation re-runs on every keystroke (debounced).
 
@@ -14,6 +17,10 @@ const BLANK_LEASE = {
 };
 
 export default function RentRoll({ leases, onChange }) {
+  const [importing, setImporting] = useState(false);
+  const [csv, setCsv] = useState("");
+  const [importErr, setImportErr] = useState(null);
+
   function edit(i, patch) {
     onChange(leases.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
@@ -22,14 +29,51 @@ export default function RentRoll({ leases, onChange }) {
 
   const num = (v) => (v === "" ? 0 : Number(v));
 
+  async function doImport(replace) {
+    try {
+      const { leases: imported } = await api.importRentroll(csv);
+      const withDefaults = imported.map((l) => ({ ...BLANK_LEASE, ...l }));
+      onChange(replace ? withDefaults : [...leases, ...withDefaults]);
+      setImporting(false);
+      setCsv("");
+      setImportErr(null);
+    } catch (e) {
+      setImportErr(e.message);
+    }
+  }
+
   return (
     <section className="panel">
       <h2 className="panel-title">
         Rent Roll
-        <button className="btn tiny" onClick={addLease}>
-          + Lease
-        </button>
+        <span style={{ display: "flex", gap: 8 }}>
+          <button className="btn tiny" onClick={() => setImporting((v) => !v)}>
+            Import CSV
+          </button>
+          <button className="btn tiny" onClick={addLease}>
+            + Lease
+          </button>
+        </span>
       </h2>
+      {importing && (
+        <div className="import-box">
+          <textarea
+            className="import-area"
+            placeholder={"tenant,sf,start_year,term,rent,escalation\nAcme Corp,20000,1,7,29.5,3"}
+            value={csv}
+            onChange={(e) => setCsv(e.target.value)}
+          />
+          {importErr && <div className="import-err">{importErr}</div>}
+          <div className="import-actions">
+            <button className="btn tiny" onClick={() => doImport(true)}>
+              Replace
+            </button>
+            <button className="btn tiny" onClick={() => doImport(false)}>
+              Append
+            </button>
+          </div>
+        </div>
+      )}
       <div className="table-scroll">
         <table className="grid">
           <thead>
